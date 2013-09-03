@@ -34,7 +34,7 @@ namespace TTechModularReactors
 			}
 			return total;
 		}
-		//Calculate heat loss in joules.
+		//Calculate heat loss in joules. Emissivity, Area, Initial Temperature
 		public static double getHeatLoss(float e, float area, float temp)
 		{
 			return e * 5.67e-8 * area * temp * temp * temp * temp;
