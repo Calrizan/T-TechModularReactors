@@ -30,8 +30,23 @@ namespace ttmr
 		public float heatProduction = 1;
 		[KSPField]		//Power multiplier
 		public float powerMultiplier = 5;
+		[KSPField(isPersistant = false, guiActive = true, guiName = "Temperature", guiFormat = "0.0")]
+		public float Temp = 30;
+		public static float Mass = 2000;
+		public float Power = 500000;
+		public float J = Simulation.getSpecificHeat(s_mat)*Mass; //Determine the number of joules require to get the object to a certain temperature.
+//		[KSPEvent(guiActive = true, guiName = "Enable Thermodynamics", active = true)]
+//		public void Enable()
+//		{
+//			Enabled = true;
+//		}
+//
+//		[KSPEvent(guiActive = true, guiName = "Disable Thermodynamics", active = false)]
+//		public void Disable()
+//		{
+//			Enabled = false;
+//		}
 
-		double SHC = Simulation.getSpecificHeat (s_mat); //Get the SHC of the material
 		public void FixedUpdate()
 		{
 			//Logic chunk for determining if we are in flight, paused, or destroyed.
@@ -41,6 +56,11 @@ namespace ttmr
 				return;
 			if (FlightDriver.Pause)
 				return;
+			Temp -= Simulation.getHeatLoss (0.5f, 6, Temp) / J;
+			if (((ModuleGenerator)part.Modules["ModuleGenerator"]).generatorIsActive) 
+			{
+				Temp += Power / J;
+			}
 			//End of logic
 		}
 	}
