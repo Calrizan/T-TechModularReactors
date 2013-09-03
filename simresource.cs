@@ -35,12 +35,12 @@ namespace TTechModularReactors
 			return total;
 		}
 		//Calculate heat loss in joules. Emissivity, Area, Initial Temperature
-		public static double getHeatLoss(float e, float area, float temp)
+		public static float getHeatLoss(float e, float area, float temp)
 		{
-			return e * 5.67e-8 * area * temp * temp * temp * temp;
+			return (e * 5.67e-8f * area * temp * temp * temp * temp);
 		}
 		//Dictionary of specific heat capacities for commonly-used structural materials. By no means complete.
-		public static double getSpecificHeat(string S)
+		public static float getSpecificHeat(string S)
 		{
 			Dictionary<string, object> Mat = new Dictionary<string, object> ();
 			Mat.Add ("aluminum", 0.91);
@@ -51,7 +51,7 @@ namespace TTechModularReactors
 			Mat.Add ("glycol", 2.200);
 			Mat.Add ("air", 1.020);
 			Mat.Add ("water", 4.186);
-			return Convert.ToDouble(Mat [S]);
+			return (float) Mat [S];
 		}
 	}
 }
