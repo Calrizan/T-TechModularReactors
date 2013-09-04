@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using UnityEngine;
 
 namespace TTechModularReactors
 {
@@ -35,12 +36,12 @@ namespace TTechModularReactors
 			return total;
 		}
 		//Calculate heat loss in joules. Emissivity, Area, Initial Temperature
-		public static float getHeatLoss(float e, float area, float temp)
+		public static float getHeatLoss(float e, float area, float temp, float ambient)
 		{
-			return (e * 5.67e-8f * area * temp * temp * temp * temp);
+			return (e * 5.67e-8f * area * (float)(Math.Pow(temp,4)-Math.Pow(ambient+273.15, 4)));
 		}
 		//Dictionary of specific heat capacities for commonly-used structural materials. By no means complete.
-		public static float getSpecificHeat(string S)
+		public static double getSpecificHeat(string S)
 		{
 			Dictionary<string, object> Mat = new Dictionary<string, object> ();
 			Mat.Add ("aluminum", 0.91);
@@ -51,7 +52,7 @@ namespace TTechModularReactors
 			Mat.Add ("glycol", 2.200);
 			Mat.Add ("air", 1.020);
 			Mat.Add ("water", 4.186);
-			return (float) Mat [S];
+			return Convert.ToDouble (Mat [S]);
 		}
 	}
 }
