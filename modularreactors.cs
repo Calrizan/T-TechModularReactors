@@ -24,28 +24,32 @@ namespace ttmr
 {
 	public class reactor : PartModule
 	{
-		[KSPField]		//What material is the part made of?
-		static public string s_mat = "iron";
-		[KSPField]		//This controls heat fine-tuning.
-		public float heatProduction = 1;
-		[KSPField]		//Power multiplier
-		public float powerMultiplier = 5;
-		[KSPField(isPersistant = false, guiActive = true, guiName = "Temperature", guiFormat = "0.0")]
-		public float Temp = 30;
-		public static float Mass = 2000;
-		public float Power = 500000;
-		public float J = Simulation.getSpecificHeat(s_mat)*Mass; //Determine the number of joules require to get the object to a certain temperature.
-//		[KSPEvent(guiActive = true, guiName = "Enable Thermodynamics", active = true)]
-//		public void Enable()
-//		{
-//			Enabled = true;
-//		}
-//
-//		[KSPEvent(guiActive = true, guiName = "Disable Thermodynamics", active = false)]
-//		public void Disable()
-//		{
-//			Enabled = false;
-//		}
+		public bool Enabled;
+
+		[KSPField(isPersistant = true)]		
+		static public string material = "aluminum";														//What material is the part made of?
+
+		[KSPField(isPersistant = true)]
+		static public string fuel = "THF4";																//What sort of fuel are we planning to use? This will determine fissile power density in J/s											
+
+		[KSPField(isPersistant = false, guiActive = true, guiName = "Temperature", guiFormat = "0.0")]	//Display the temperature of the reactor in K
+		public float Temp = 290;																		//Roughly pad temperature in KSP
+		public float Power = 5000; //Stand in for fuel
+		[KSPField(isPersistant = false, guiActive = true, guiName = "J/k", guiFormat = "1.0")] 			//This doesn't display for some reason or another.
+		public static float J = (float)Simulation.getSpecificHeat(material)*2000; 						//Determine the number of joules required to raise the temperature by 1K
+
+		[KSPEvent(guiActive = true, guiName = "Enable Reactor", active = true)]							//Create a UI button for enabling the reactor
+		public void Enable()
+		{
+			Enabled = true;
+		}
+
+		[KSPEvent(guiActive = true, guiName = "Disable Reactor", active = true)]						//Create a UI button for disabling the reactor
+		public void Disable()
+		{
+			Enabled = false;
+		}
+
 
 		public void FixedUpdate()
 		{
@@ -56,12 +60,12 @@ namespace ttmr
 				return;
 			if (FlightDriver.Pause)
 				return;
-			Temp -= Simulation.getHeatLoss (0.5f, 6, Temp) / J;
-			if (((ModuleGenerator)part.Modules["ModuleGenerator"]).generatorIsActive) 
+			//End of logic
+			Temp -= Simulation.getHeatLoss (0.5f, 4, Temp, part.temperature) / J;
+			if(Enabled)
 			{
 				Temp += Power / J;
 			}
-			//End of logic
 		}
 	}
 }
