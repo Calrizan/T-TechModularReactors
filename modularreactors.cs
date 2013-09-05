@@ -20,36 +20,41 @@ using System.Text;
 using UnityEngine;
 using TTechModularReactors;
 
-namespace ttmr
+namespace TTechModularReactors
 {
 	public class reactor : PartModule
 	{
 		public bool Enabled;
+        public float J;
+        AtmosphereProbe probe = new AtmosphereProbe();
 
-		[KSPField(isPersistant = true)]		
-		static public string material = "aluminum";														//What material is the part made of?
+		[KSPField(isPersistant = false)]	
+		public string material;														                        //What material is the part made of?
 
-		[KSPField(isPersistant = true)]
-		static public string fuel = "THF4";																//What sort of fuel are we planning to use? This will determine fissile power density in J/s											
+		[KSPField(isPersistant = false)] 
+		public string fuel;																                    //What sort of fuel are we planning to use? This will determine fissile power density in J/s											
 
-		[KSPField(isPersistant = false, guiActive = true, guiName = "Temperature", guiFormat = "0.0")]	//Display the temperature of the reactor in K
-		public float Temp = 290;																		//Roughly pad temperature in KSP
+		[KSPField]
+		public float emissivity;                                                                            //What is the emissivity of the object?
+
+        [KSPField]
+        public float surfaceArea;																			//What is the emissive surface area of the object?
+            
+		[KSPField(isPersistant = false, guiActive = true, guiName = "Temperature", guiFormat = "0.0")]	    //Display the temperature of the reactor in K
+		public float Temp = 290;																		    //Roughly pad temperature in KSP
+
 		public float Power = 5000; //Stand in for fuel
-		[KSPField(isPersistant = false, guiActive = true, guiName = "J/k", guiFormat = "1.0")] 			//This doesn't display for some reason or another.
-		public static float J = (float)Simulation.getSpecificHeat(material)*2000; 						//Determine the number of joules required to raise the temperature by 1K
-
-		[KSPEvent(guiActive = true, guiName = "Enable Reactor", active = true)]							//Create a UI button for enabling the reactor
-		public void Enable()
+		
+        [KSPEvent(guiActive = true, guiName = "Toggle Reactor", active = true)]							    //Create a UI button for enabling the reactor
+		public void Toggle()
 		{
-			Enabled = true;
+			Enabled = !Enabled;
 		}
 
-		[KSPEvent(guiActive = true, guiName = "Disable Reactor", active = true)]						//Create a UI button for disabling the reactor
-		public void Disable()
-		{
-			Enabled = false;
-		}
-
+        public override void OnLoad(ConfigNode node)
+        {
+            J = (float)Simulation.getSpecificHeat(material) * (part.mass*1000);                             //Determine the number of joules required to raise the temperature by 1K
+        }
 
 		public void FixedUpdate()
 		{
@@ -61,10 +66,11 @@ namespace ttmr
 			if (FlightDriver.Pause)
 				return;
 			//End of logic
-			Temp -= Simulation.getHeatLoss (0.5f, 4, Temp, part.temperature) / J;
+			Temp -= Simulation.getHeatLoss (emissivity, surfaceArea, Temp, probe.temperature) / J;
 			if(Enabled)
 			{
 				Temp += Power / J;
+                Debug.Log("E: "+emissivity+"\nsA:"+surfaceArea);
 			}
 		}
 	}
