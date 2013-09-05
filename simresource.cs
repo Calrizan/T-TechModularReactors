@@ -52,6 +52,7 @@ namespace TTechModularReactors
 			Mat.Add ("glycol", 2.200);
 			Mat.Add ("air", 1.020);
 			Mat.Add ("water", 4.186);
+            Mat.Add ("copper", 0.386);
 			return Convert.ToDouble (Mat [S]);
 		}
 	}
