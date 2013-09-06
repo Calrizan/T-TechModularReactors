@@ -26,13 +26,13 @@ namespace TTechModularReactors
 	{
 		public bool Enabled;
         public float J;
-        AtmosphereProbe probe = new AtmosphereProbe();
+        public float F1, F2;
 
 		[KSPField(isPersistant = false)]	
 		public string material;														                        //What material is the part made of?
 
 		[KSPField(isPersistant = false)] 
-		public string fuel;																                    //What sort of fuel are we planning to use? This will determine fissile power density in J/s											
+		public string fuelType;																                    //What sort of fuel are we planning to use? This will determine fissile power density in J/s											
 
 		[KSPField]
 		public float emissivity;                                                                            //What is the emissivity of the object?
@@ -42,6 +42,9 @@ namespace TTechModularReactors
             
 		[KSPField(isPersistant = false, guiActive = true, guiName = "Temperature", guiFormat = "0.0")]	    //Display the temperature of the reactor in K
 		public float Temp = 290;																		    //Roughly pad temperature in KSP
+
+        [KSPField(isPersistant = false, guiActive = true, guiName = "Fuel", guiFormat = "P1")]
+        public float fuelLeft;
 
 		public float Power = 5000; //Stand in for fuel
 		
@@ -53,7 +56,9 @@ namespace TTechModularReactors
 
         public override void OnLoad(ConfigNode node)
         {
-            J = (float)Simulation.getSpecificHeat(material) * (part.mass*1000);                             //Determine the number of joules required to raise the temperature by 1K
+            J = Simulation.getSpecificHeat(material) * (part.mass*1000);                             //Determine the number of joules required to raise the temperature by 1K
+            F1 = Simulation.getEnergyDensity(fuelType);
+            F2 = Simulation.getEnergyDensity(fuelType);
         }
 
 		public void FixedUpdate()
@@ -66,11 +71,13 @@ namespace TTechModularReactors
 			if (FlightDriver.Pause)
 				return;
 			//End of logic
-			Temp -= Simulation.getHeatLoss (emissivity, surfaceArea, Temp, probe.temperature) / J;
+            Vector3 position = this.part.transform.position;
+            Temp -= Simulation.getHeatLoss(emissivity, surfaceArea, Temp, FlightGlobals.getExternalTemperature(FlightGlobals.getAltitudeAtPos(position), FlightGlobals.getMainBody())) / J * TimeWarp.fixedDeltaTime;
 			if(Enabled)
 			{
-				Temp += Power / J;
-                Debug.Log("E: "+emissivity+"\nsA:"+surfaceArea);
+				Temp += Power / J * TimeWarp.fixedDeltaTime;
+                F2 -= Power * TimeWarp.fixedDeltaTime;
+                fuelLeft = F2 / F1;
 			}
 		}
 	}
