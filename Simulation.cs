@@ -40,12 +40,20 @@ namespace TTechModularReactors
             return total;
         }
         //Get a list of reactor parts from our vessel.
-        public static void GetSink(Vessel vessel, Part part)
+        public static void ProcessSink(Vessel vessel, Part part)
         {
-            var sinks = vessel.parts.SelectMany(p => p.Modules.OfType<Sink>());
-            foreach (var sink in sinks)
+            var reactors = vessel.parts.SelectMany(p => p.Modules.OfType<Reactor>());
+            foreach (var reactor in reactors)
             {
-                sink.temperature += part.temperature / 10; //Something important goes here. I don't know what yet.
+                var sinks = vessel.parts.SelectMany(p => p.Modules.OfType<Sink>());
+                foreach (var sink in sinks)
+                {
+                    var q = 205f * reactor.SurfaceArea * ((reactor.Temp - sink.Temp) * 0.1f);
+                    Debug.Log("Sink: " + sink.Temp + "\nReactor: " + reactor.Temp+"\nQ: "+q);
+                    reactor.Temp -= q/reactor.Joules;
+                    sink.Temp += q/sink.Joules;
+                }
+                
             }
         }
         //Calculate heat loss in joules. Emissivity, Area, Initial Temperature
