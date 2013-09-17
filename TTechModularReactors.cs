@@ -47,7 +47,7 @@ namespace TTechModularReactors
         [KSPField(isPersistant = false, guiActive = true, guiName = "Fuel", guiFormat = "P1")]
         public float fuelLeft;
         //Stand in for the power slider, which will be introduced later.
-		public float Power = 5000;
+		public float Power = 5000000;
         //Create a UI button for enabling the reactor
         [KSPEvent(guiActive = true, guiName = "Toggle Reactor", active = true)]							    
 		public void Toggle()
@@ -58,15 +58,15 @@ namespace TTechModularReactors
         public override void OnLoad(ConfigNode node)
         {
             //Determine how many J/s it takes to raise the core temp by 1 kelvin.
-            Joules = Simulation.GetSpecificHeat(Material) * (part.mass*1000);
-            F1 = Simulation.GetEnergyDensity(FuelType);
-            F2 = Simulation.GetEnergyDensity(FuelType);
+            Joules = Simulation.GetSpecificHeat(Material) * (part.mass*1000000);
+            F1 = Simulation.GetEnergyDensity(FuelType)*50;
+            F2 = Simulation.GetEnergyDensity(FuelType)*50;
             fuelLeft = F2 / F1;
         }
 
         public override void OnUpdate()
         {
-            Simulation.GetSink(vessel, part);
+            Simulation.ProcessSink(vessel, part);
         }
 
 		public void FixedUpdate()
@@ -95,7 +95,7 @@ namespace TTechModularReactors
 
     public class Sink : PartModule
     {
-        public static float Joules;
+        public float Joules;
         //Set the sink material
         [KSPField]
         public string Material;
@@ -107,7 +107,7 @@ namespace TTechModularReactors
         public float SurfaceArea;
         //Display the temperature of the sink
         [KSPField(isPersistant = false, guiActive = true, guiName = "Temperature", guiFormat = "0.0")]
-        public float temperature = 290;
+        public float Temp = 290;
         
         //Stuff to load when a partmodule is loaded.
         public override void OnLoad(ConfigNode node)
@@ -122,7 +122,7 @@ namespace TTechModularReactors
             if (FlightDriver.Pause) return;
 
             Vector3 position = this.part.transform.position;
-            temperature -= Simulation.GetHeatLoss(Emissivity, SurfaceArea, temperature, FlightGlobals.getExternalTemperature(FlightGlobals.getAltitudeAtPos(position), FlightGlobals.getMainBody())) / Joules * TimeWarp.fixedDeltaTime;
+            Temp -= Simulation.GetHeatLoss(Emissivity, SurfaceArea, Temp, FlightGlobals.getExternalTemperature(FlightGlobals.getAltitudeAtPos(position), FlightGlobals.getMainBody())) / Joules * TimeWarp.fixedDeltaTime;
         }
     }
 }
