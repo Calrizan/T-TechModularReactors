@@ -25,8 +25,8 @@ namespace TTechModularReactors
 	public class Reactor : PartModule
 	{
 		public bool Enabled;
-        public float Joules;
-        public float F1, F2;
+        public double Joules;
+        public double F1, F2;
 
         //Get the reactor material type. Material dictionary is available in simresource.cs under Simulation.
 		[KSPField(isPersistant = false)]	
@@ -36,18 +36,21 @@ namespace TTechModularReactors
 		public string FuelType;																                  										
         //What is the blackbody emissivity of the part? This calculates heat-loss over time.
 		[KSPField]
-		public float Emissivity;                                                                            
+		public float Emissivity;
+        //How many Kg of fuel are we carrying?
+        [KSPField]
+        public float FuelMass;                                            
         //Get the emissive surface area from the config.
         [KSPField]
-        public float SurfaceArea;																			
+        public float SurfaceArea;																	
         //Display Reactor Temperature
 		[KSPField(isPersistant = false, guiActive = true, guiName = "Temperature", guiFormat = "0.0")]
-		public float Temp = 290;
+		public double Temp = 290;
         //Display amount of fuel remaining in %.
         [KSPField(isPersistant = false, guiActive = true, guiName = "Fuel", guiFormat = "P1")]
-        public float fuelLeft;
+        public double fuelLeft;
         //Stand in for the power slider, which will be introduced later.
-		public float Power = 5000000;
+		public double Power = 5000;
         //Create a UI button for enabling the reactor
         [KSPEvent(guiActive = true, guiName = "Toggle Reactor", active = true)]							    
 		public void Toggle()
@@ -57,19 +60,15 @@ namespace TTechModularReactors
 
         public override void OnLoad(ConfigNode node)
         {
+            Debug.Log("Reactor Surface Area: " + SurfaceArea + "\nReactor Emissivity: " + Emissivity);
             //Determine how many J/s it takes to raise the core temp by 1 kelvin.
-            Joules = Simulation.GetSpecificHeat(Material) * (part.mass*1000000);
-            F1 = Simulation.GetEnergyDensity(FuelType)*50;
-            F2 = Simulation.GetEnergyDensity(FuelType)*50;
+            Joules = Simulation.GetSpecificHeat(Material) * (part.mass*1000);
+            F1 = Simulation.GetEnergyDensity(FuelType)*FuelMass;
+            F2 = Simulation.GetEnergyDensity(FuelType)*FuelMass;
             fuelLeft = F2 / F1;
         }
 
-        public override void OnUpdate()
-        {
-            Simulation.ProcessSink(vessel, part);
-        }
-
-		public void FixedUpdate()
+		public void FixedUpdate()   
 		{
 			//Logic chunk for determining if we are in flight, paused, or destroyed.
 			if (!HighLogic.LoadedSceneIsFlight)
@@ -78,15 +77,20 @@ namespace TTechModularReactors
 				return;
 			if (FlightDriver.Pause)
 				return;
+            if (TimeWarp.CurrentRate > 100)
+                return;
 			//End of logic
             //Get the part position
             Vector3 position = this.part.transform.position;
             //Calculate the reactor's heat with the values gathered from the config and world.
-            Temp -= Simulation.GetHeatLoss(Emissivity, SurfaceArea, Temp, FlightGlobals.getExternalTemperature(FlightGlobals.getAltitudeAtPos(position), FlightGlobals.getMainBody())) / Joules * TimeWarp.fixedDeltaTime;
+            Temp -= (Simulation.GetHeatLoss(Emissivity, SurfaceArea, Temp, FlightGlobals.getExternalTemperature(FlightGlobals.getAltitudeAtPos(position), FlightGlobals.getMainBody())) / Joules) * TimeWarp.fixedDeltaTime;
+            Simulation.ProcessSink(vessel);
+            //Clamp the temperature of the part. Absolute zero is unreachable, and 5000K is well beyond meltdown. This does not solve the wild oscillation problems we still have
+            Temp = MathExtensions.Clamp(Temp, 1, 5000);
             //Reactor power loop.
 			if(Enabled && F2 > 5000)
 			{
-				Temp += Power / Joules * TimeWarp.fixedDeltaTime;
+				Temp += (Power / Joules) * TimeWarp.fixedDeltaTime;
                 F2 -= Power * TimeWarp.fixedDeltaTime;
                 fuelLeft = F2 / F1;
 			}
@@ -95,7 +99,7 @@ namespace TTechModularReactors
 
     public class Sink : PartModule
     {
-        public float Joules;
+        public double Joules;
         //Set the sink material
         [KSPField]
         public string Material;
@@ -107,11 +111,12 @@ namespace TTechModularReactors
         public float SurfaceArea;
         //Display the temperature of the sink
         [KSPField(isPersistant = false, guiActive = true, guiName = "Temperature", guiFormat = "0.0")]
-        public float Temp = 290;
+        public double Temp = 290;
         
         //Stuff to load when a partmodule is loaded.
         public override void OnLoad(ConfigNode node)
         {
+            Debug.Log("Sink Surface Area: " + SurfaceArea + "\nSink Emissivity: " + Emissivity);
             Joules = Simulation.GetSpecificHeat(Material) * (part.mass * 1000);
         }
 
@@ -122,7 +127,8 @@ namespace TTechModularReactors
             if (FlightDriver.Pause) return;
 
             Vector3 position = this.part.transform.position;
-            Temp -= Simulation.GetHeatLoss(Emissivity, SurfaceArea, Temp, FlightGlobals.getExternalTemperature(FlightGlobals.getAltitudeAtPos(position), FlightGlobals.getMainBody())) / Joules * TimeWarp.fixedDeltaTime;
+            Temp -= (Simulation.GetHeatLoss(Emissivity, SurfaceArea, Temp, FlightGlobals.getExternalTemperature(FlightGlobals.getAltitudeAtPos(position), FlightGlobals.getMainBody())) / Joules) * TimeWarp.fixedDeltaTime;
+            Temp = MathExtensions.Clamp(Temp, 1, 5000);
         }
     }
 }
